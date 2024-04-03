@@ -16,27 +16,36 @@ void BitcoinExchange::read(std::string file_name)
 			std::string line;
 			std::string date;
 			std::string value;
+			std::getline(dataBase, line);
+			if (line != "date,exchange_rate")
+			{
+				std::cout << "Error: Database header is invalid!" << std::endl;
+				dataBase.close();
+				return;
+			}
 			while (std::getline(dataBase, line))
 			{
 				std::stringstream ss(line);
-				if (BitcoinExchange::charCount(line, '|') != 1)
+				if (charCount(line, ',') != 1)
 				{
 					std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
 					dataBase.close();
 				}
-				std::getline(ss, date, '|');
-				std::getline(ss, value, '|');
-				if (BitcoinExchange::checkDate(date) == -1)
+				std::getline(ss, date, ',');
+				std::getline(ss, value, ',');
+				if (checkDate(date) == -1)
 				{
 					std::cout << "Error: Invalid date found in database = " << date << "!" << std::endl;
 					dataBase.close();
+					return;
 				}
-				else if (BitcoinExchange::checkValue(value) == -1)
+				else if (checkValue(value) == -1)
 				{
 					std::cout << "Error: Invalid value found in database = " << line << "!" << std::endl;
 					dataBase.close();
+					return;
 				}
-				dataMap[date] = BitcoinExchange::getIntValue(value);
+				dataMap[getIntDate(date)] = getIntValue(value);
 				ss.clear();
 			}
 		}
@@ -186,22 +195,6 @@ double BitcoinExchange::getIntValue(std::string str)
 	return (std::stod(str));
 }
 
-int BitcoinExchange::checkLineValue(std::string str)
-{
-	double num;
-
-	if (checkValue(str) == 1)
-	{
-		num = std::stod(str);
-		if (num < 0 || num > 1000)
-			return (-2);
-		return (1);
-	}
-	else
-	{
-		return (-1);
-	}
-}
 
 double BitcoinExchange::getValue(std::map<int, double> dataMap, int date, double value)
 {

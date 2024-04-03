@@ -1,50 +1,118 @@
-#include <iostream>
-#include <map>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <string>
 #include "BitcoinExchange.hpp"
 
-int main(int argc, char *argv[])
+int main(int ac, char **av)
 {
-    if (argc != 2)
-    {
-        std::cerr << "Usage: ./btc <file_name>" << std::endl;
-        return 1;
-    }
-    std::map<int, double> map;
-    std::ifstream file(argv[1]);
-    if (!file.is_open())
-    {
-        std::cerr << "Error: file not found" << std::endl;
-        return 1;
-    }
-    std::string line;
-    std::string date;
-    std::string value;
-    int i = 0;
-    while(std::getline(file, line))
-    {
-        std::stringstream ss(line);
-        std::getline(ss, date, '|');
-        std::getline(ss, value, ',');
-        try
-        {
-            int a = BitcoinExchange::getIntDate(date);
-            std::cout << a << std::endl;
-            map[i] = std::stod(value);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << e.what() << '\n';
-        }
-        i++;
-    }
-    file.close();
-    for (std::map<int, double>::iterator it = map.begin(); it != map.end(); it++)
-    {
-        std::cout << it->first << " " << it->second << std::endl;
-    }
-    return 0;
+	std::string CSV;
+	std::map<int, double> dataMap;
+	
+	int flag = 0;
+
+	if (ac == 2)
+	{
+		std::ifstream dataBase(av[1]);
+		if (dataBase.is_open())
+		{	
+			std::string line;
+			std::string date;
+			std::string value;
+			while (std::getline(dataBase, line))
+			{
+				std::stringstream ss(line);
+				if (BitcoinExchange::charCount(line, ',') != 1)
+				{
+					std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
+					dataBase.close();
+					return (1);
+				}
+				std::getline(ss, date, ',');
+				std::getline(ss, value, ',');
+				if (date == "date" || value == "exchange_rate")
+				{
+					flag++;
+					if (flag > 1)
+					{
+						std::cout << "Error: Database has more than one format line count = " << line << "!" << std::endl;
+						dataBase.close();
+						return (1);
+					}
+					continue;
+				}
+				else if (BitcoinExchange::checkDate(date) == -1)
+				{
+					std::cout << "Error: Invalid date found in database = " << date << "!" << std::endl;
+					dataBase.close();
+					return (1);
+				}
+				else if (BitcoinExchange::checkValue(value) == -1)
+				{
+					std::cout << "Error: Invalid value found in database = " << line << "!" << std::endl;
+					dataBase.close();
+					return (1);
+				}
+				dataMap[BitcoinExchange::getIntDate(date)] = BitcoinExchange::getIntValue(value);
+				ss.clear();
+			}
+			std::ifstream Input(av[2]);
+			if (Input.is_open())
+			{
+				flag = 0;
+				while (std::getline(Input, line))
+				{
+					std::stringstream ss(line);
+					flag++;
+					std::getline(ss, date, '|');
+					std::getline(ss, value, '|');
+
+					if (date[date.size() - 1] == ' ')
+						date.erase(date.size() - 1, 1);
+					if (value[0] == ' ')
+						value.erase(0, 1);
+					if (BitcoinExchange::charCount(line, '|') != 1)
+					{
+						std::cout << "Error: bad input => " << line << "!" << std::endl;
+					}
+					else if (date == "date " && value == " value")
+					{
+						if (flag != 1)
+							std::cout << "Error: bad input => " << line << "!" << std::endl;
+					}
+					else if (BitcoinExchange::checkDate(date) == -1)
+					{
+						std::cout << "Error: bad date => " << date << "!" << std::endl;
+					}
+					else if (BitcoinExchange::checkLineValue(value) == -1)
+					{
+						std::cout << "Error: not a positive number => " << value << "!" << std::endl;
+					}
+					else if (BitcoinExchange::checkLineValue(value) == -2)
+					{
+						std::cout << "Error: too large number => " << value << "!" << std::endl;
+					}
+					else if (BitcoinExchange::getIntDate(date) < dataMap.begin()->first)
+					{
+						std::cout<< "Error: date is older than first data => " << date << "!" << std::endl; 
+					}
+					else
+					{
+						std::cout << date << " => " << value << " = " << BitcoinExchange::getValue(dataMap, BitcoinExchange::getIntDate(date), BitcoinExchange::getIntValue(value)) << std::endl;
+					}
+					ss.clear();
+				}
+			}
+			else
+			{
+				dataMap.clear();
+				std::cout << "Error: Input file did not found!" << std::endl;
+			}
+		}
+		else
+		{
+			std::cout << "Error: Database did not found!" << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "Error: Invalid arguman count!" << std::endl;
+	}
+	return (1);
 }

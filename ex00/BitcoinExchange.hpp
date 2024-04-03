@@ -9,7 +9,12 @@
 #include <string>
 
 class BitcoinExchange {
+private:
+    std::map<std::string, double> dataMap;
 public:
+    BitcoinExchange();
+    ~BitcoinExchange();
+    void read(std::string CSV);
     static int getIntDate(std::string str);
     static double getIntValue(std::string str);
     static int checkDate(std::string str);

@@ -1,5 +1,52 @@
 #include "BitcoinExchange.hpp"
 
+BitcoinExchange::BitcoinExchange()
+{
+}
+
+BitcoinExchange::~BitcoinExchange()
+{
+}
+
+void BitcoinExchange::read(std::string file_name)
+{
+	std::ifstream dataBase(file_name);
+		if (dataBase.is_open())
+		{	
+			std::string line;
+			std::string date;
+			std::string value;
+			while (std::getline(dataBase, line))
+			{
+				std::stringstream ss(line);
+				if (BitcoinExchange::charCount(line, '|') != 1)
+				{
+					std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
+					dataBase.close();
+				}
+				std::getline(ss, date, '|');
+				std::getline(ss, value, '|');
+				if (BitcoinExchange::checkDate(date) == -1)
+				{
+					std::cout << "Error: Invalid date found in database = " << date << "!" << std::endl;
+					dataBase.close();
+				}
+				else if (BitcoinExchange::checkValue(value) == -1)
+				{
+					std::cout << "Error: Invalid value found in database = " << line << "!" << std::endl;
+					dataBase.close();
+				}
+				dataMap[date] = BitcoinExchange::getIntValue(value);
+				ss.clear();
+			}
+		}
+		else
+		{
+			std::cout << "Error: Database did not found!" << std::endl;
+		}
+}
+
+
 int BitcoinExchange::charCount(std::string str, char ch)
 {
 	int count = 0;

@@ -3,7 +3,7 @@
 int main(int ac, char **av)
 {
 	std::string CSV;
-	std::map<int, double> dataMap;
+	std::map<std::string, double> dataMap;
 	
 	int flag = 0;
 
@@ -18,14 +18,14 @@ int main(int ac, char **av)
 			while (std::getline(dataBase, line))
 			{
 				std::stringstream ss(line);
-				if (BitcoinExchange::charCount(line, ',') != 1)
+				if (BitcoinExchange::charCount(line, '|') != 1)
 				{
 					std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
 					dataBase.close();
 					return (1);
 				}
-				std::getline(ss, date, ',');
-				std::getline(ss, value, ',');
+				std::getline(ss, date, '|');
+				std::getline(ss, value, '|');
 				if (date == "date" || value == "exchange_rate")
 				{
 					flag++;
@@ -49,60 +49,8 @@ int main(int ac, char **av)
 					dataBase.close();
 					return (1);
 				}
-				dataMap[BitcoinExchange::getIntDate(date)] = BitcoinExchange::getIntValue(value);
+				dataMap[date] = BitcoinExchange::getIntValue(value);
 				ss.clear();
-			}
-			std::ifstream Input(av[2]);
-			if (Input.is_open())
-			{
-				flag = 0;
-				while (std::getline(Input, line))
-				{
-					std::stringstream ss(line);
-					flag++;
-					std::getline(ss, date, '|');
-					std::getline(ss, value, '|');
-
-					if (date[date.size() - 1] == ' ')
-						date.erase(date.size() - 1, 1);
-					if (value[0] == ' ')
-						value.erase(0, 1);
-					if (BitcoinExchange::charCount(line, '|') != 1)
-					{
-						std::cout << "Error: bad input => " << line << "!" << std::endl;
-					}
-					else if (date == "date " && value == " value")
-					{
-						if (flag != 1)
-							std::cout << "Error: bad input => " << line << "!" << std::endl;
-					}
-					else if (BitcoinExchange::checkDate(date) == -1)
-					{
-						std::cout << "Error: bad date => " << date << "!" << std::endl;
-					}
-					else if (BitcoinExchange::checkLineValue(value) == -1)
-					{
-						std::cout << "Error: not a positive number => " << value << "!" << std::endl;
-					}
-					else if (BitcoinExchange::checkLineValue(value) == -2)
-					{
-						std::cout << "Error: too large number => " << value << "!" << std::endl;
-					}
-					else if (BitcoinExchange::getIntDate(date) < dataMap.begin()->first)
-					{
-						std::cout<< "Error: date is older than first data => " << date << "!" << std::endl; 
-					}
-					else
-					{
-						std::cout << date << " => " << value << " = " << BitcoinExchange::getValue(dataMap, BitcoinExchange::getIntDate(date), BitcoinExchange::getIntValue(value)) << std::endl;
-					}
-					ss.clear();
-				}
-			}
-			else
-			{
-				dataMap.clear();
-				std::cout << "Error: Input file did not found!" << std::endl;
 			}
 		}
 		else

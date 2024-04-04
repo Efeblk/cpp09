@@ -5,7 +5,8 @@ int main(int ac, char **av)
 	if (ac == 2)
 	{
 		BitcoinExchange exchange;
-		exchange.read(av[1]);
+		exchange.read_db();
+		exchange.read_input(av[1]);
 	}
 	else
 	{

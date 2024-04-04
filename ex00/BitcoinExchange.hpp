@@ -14,7 +14,8 @@ private:
 public:
     BitcoinExchange();
     ~BitcoinExchange();
-    void read(std::string file_name);
+    void read_db();
+    void read_input(std::string file_name);
     static int getIntDate(std::string str);
     static double getIntValue(std::string str);
     static int checkDate(std::string str);

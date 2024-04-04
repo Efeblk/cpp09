@@ -8,53 +8,97 @@ BitcoinExchange::~BitcoinExchange()
 {
 }
 
-void BitcoinExchange::read(std::string file_name)
+void BitcoinExchange::read_db()
 {
-	std::ifstream dataBase(file_name);
-		if (dataBase.is_open())
-		{	
-			std::string line;
-			std::string date;
-			std::string value;
-			std::getline(dataBase, line);
-			if (line != "date,exchange_rate")
+	std::ifstream dataBase("data.csv");
+	if (dataBase.is_open())
+	{	
+		std::string line;
+		std::string date;
+		std::string value;
+		std::getline(dataBase, line);
+		if (line != "date,exchange_rate")
+		{
+			std::cout << "Error: Database header is invalid!" << std::endl;
+			dataBase.close();
+			return;
+		}
+		while (std::getline(dataBase, line))
+		{
+			std::stringstream ss(line);
+			if (charCount(line, ',') != 1)
 			{
-				std::cout << "Error: Database header is invalid!" << std::endl;
+				std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
+				dataBase.close();
+			}
+			std::getline(ss, date, ',');
+			std::getline(ss, value, ',');
+			if (checkDate(date) == -1)
+			{
+				std::cout << "Error: Invalid date found in database = " << date << "!" << std::endl;
 				dataBase.close();
 				return;
 			}
-			while (std::getline(dataBase, line))
+			else if (checkValue(value) == -1)
 			{
-				std::stringstream ss(line);
-				if (charCount(line, ',') != 1)
-				{
-					std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
-					dataBase.close();
-				}
-				std::getline(ss, date, ',');
-				std::getline(ss, value, ',');
-				if (checkDate(date) == -1)
-				{
-					std::cout << "Error: Invalid date found in database = " << date << "!" << std::endl;
-					dataBase.close();
-					return;
-				}
-				else if (checkValue(value) == -1)
-				{
-					std::cout << "Error: Invalid value found in database = " << line << "!" << std::endl;
-					dataBase.close();
-					return;
-				}
-				dataMap[getIntDate(date)] = getIntValue(value);
-				ss.clear();
+				std::cout << "Error: Invalid value found in database = " << line << "!" << std::endl;
+				dataBase.close();
+				return;
 			}
+			dataMap[getIntDate(date)] = getIntValue(value);
+			ss.clear();
 		}
-		else
-		{
-			std::cout << "Error: Database did not found!" << std::endl;
-		}
+	}
+	else
+	{
+		std::cout << "Error: Database did not found!" << std::endl;
+	}
 }
 
+void BitcoinExchange::read_input(std::string file_name)
+{
+	std::ifstream dataBase(file_name);
+	if (dataBase.is_open())
+	{	
+		std::string line;
+		std::string date;
+		std::string value;
+		std::getline(dataBase, line);
+		if (line != "date | value")
+		{
+			std::cout << "Error: Database header is invalid!" << std::endl;
+			dataBase.close();
+			return;
+		}
+		while (std::getline(dataBase, line))
+		{
+			std::stringstream ss(line);
+			if (charCount(line, '|') != 1)
+			{
+				std::cout << "Error: Database line has invalid arguman count = " << line << "!" << std::endl;
+				continue;
+			}
+			std::getline(ss, date, '|');
+			std::getline(ss, value, '|');
+			if (checkDate(date) == -1)
+			{
+				std::cout << "Error: Invalid date found in database = " << date << "!" << std::endl;
+				continue;
+			}
+			else if (checkValue(value) == -1)
+			{
+				std::cout << "Error: Invalid value found in database = " << line << "!" << std::endl;
+				continue;
+			}
+			std::cout << date << " | " << value << " | " << getValue(dataMap, getIntDate(date), getIntValue(value)) << std::endl;
+			ss.clear();
+		}
+	}
+	else
+	{
+		std::cout << "Error: Database did not found!" << std::endl;
+	}
+}
 
 int BitcoinExchange::charCount(std::string str, char ch)
 {
@@ -90,7 +134,7 @@ int BitcoinExchange::checkDate(std::string str)
 		return (-1);
 	getline(ss, year, '-');
 	getline(ss, month, '-');
-	getline(ss, day, '-');
+	getline(ss, day, ' ');
 
 	if (is_num(year) == -1 ||  is_num(month) == -1 || is_num(day) == -1)
 		return (-1);
@@ -126,23 +170,35 @@ int BitcoinExchange::checkDate(std::string str)
 
 int BitcoinExchange::checkValue(std::string str)
 {
+	try
+	{
+		int number = stoi(str);
+		if (number < 0 || number > 2147483647)
+		{
+			return (-1);
+		}
+	}
+	catch(const std::exception& e)
+	{
+
+		return (-1);
+	}
 	int flag = 0;
 	for (int i = 0; str[i]; i++)
 	{
-		if (str[i] < '0' || str[i] > '9')
+		if (str[i] >= '0' && str[i] <= '9')
 		{
-			if (str[i] == '.')
-			{
-				flag++;
-				if (flag > 1)
-					return (-1);
-			}
-			else
-			{
+			i++;
+		}
+		if (str[i] == '.')
+		{
+			if (flag == 1)
 				return (-1);
-			}
+			flag++;
+			i++;
 		}
 	}
+
 	return (1);
 }
 
